@@ -4,8 +4,6 @@
 
 #include "hashmap.h"
 
-#include <stdio.h>
-
 //-----------------------------------------------------------------------------
 // SipHash reference C implementation
 //
@@ -85,7 +83,7 @@ static uint64_t SIP64(const uint8_t *in, const size_t inlen, uint64_t seed0, uin
 
 //-----------------------------------------------------------------------------
 
-#define HASHMAP_INITIAL_N 3
+#define HASHMAP_INITIAL_N 32
 
 uint64_t rand_uint64(void) {
     uint64_t r = 0;
@@ -446,6 +444,8 @@ void HashMap_Free(HashMap* h) {
     free(h->right);
 }
 
+/*
+#include <stdio.h>
 int main() {
 
     HashMap* h = malloc(sizeof(HashMap));
@@ -524,3 +524,4 @@ int main() {
 
     return 0;
 }
+*/
