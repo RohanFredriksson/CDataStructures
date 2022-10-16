@@ -35,6 +35,8 @@ Inputs:
  - size_t key_size: the size in bytes of the key datatype.
  - size_t value_size: the size in bytes of the value datatype.
 
+Time Complexity: O(1)
+
 Example:
  - This creates a map with float key and integer values.
 
@@ -55,6 +57,8 @@ Inputs:
 Outputs:
  - 0: if the object was successfully retrieved from the map.
  - 1: if the object could not be found in the map.
+
+Time Complexity: O(1)
 
 Example:
  - This gets the value stored at 1.0f in the map
@@ -78,6 +82,8 @@ Outputs:
  - 0: if the key/value pair was successfully removed from the map.
  - 1: if the key could not be found in the map.
 
+Time Complexity: O(1)
+
 Example:
  - This removes the key/value pair associated with 1.0f in the map
 
@@ -96,6 +102,8 @@ Inputs:
  - void* key: a memory address which contains data about the key.
  - void* value: a memory address which contains data about the value.
 
+Time Complexity: Amortised O(1)
+
 Example:
  - This adds a key/value pair to the map.
 
@@ -112,6 +120,8 @@ Frees all memory associated with an initialised HashMap structure.
 
 Inputs:
  - HashMap* h: the memory address of the HashMap structure.
+
+Time Complexity: O(1)
 
 Example:
  - This frees all dynamically allocated memory.
