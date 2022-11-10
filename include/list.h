@@ -4,14 +4,14 @@
 struct List {
 
     void** elements;
-    size_t elementSize;
+    size_t element_size;
     int size;
     int length;
 
 };
 typedef struct List List;
 
-void List_Init(List* l, size_t elementSize);
+void List_Init(List* l, size_t element_size);
 
 int List_Length(List* l);
 

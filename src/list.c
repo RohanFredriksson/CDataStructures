@@ -4,9 +4,9 @@
 
 #define INITIAL_LIST_SIZE 16
 
-void List_Init(List* l, size_t elementSize) {
+void List_Init(List* l, size_t element_size) {
     l->elements = malloc(INITIAL_LIST_SIZE * sizeof(void*));
-    l->elementSize = elementSize;
+    l->element_size = element_size;
     l->size = INITIAL_LIST_SIZE;
     l->length = 0;
 }
@@ -17,14 +17,14 @@ int List_Length(List* l) {
 
 int List_Get(List* l, int index, void* buffer) {
     if (index < 0 || index >= l->length) return 1;
-    memcpy(buffer, l->elements[index], l->elementSize);
+    memcpy(buffer, l->elements[index], l->element_size);
     return 0;
 }
 
 int List_Pop(List* l, void* buffer) {
     
     if (l->length < 1) return 1;
-    if (buffer != NULL) memcpy(buffer, l->elements[l->length-1], l->elementSize);
+    if (buffer != NULL) memcpy(buffer, l->elements[l->length-1], l->element_size);
     
     free(l->elements[l->length-1]);
     return 0;
@@ -34,7 +34,7 @@ int List_Pop(List* l, void* buffer) {
 int List_Shift(List* l, void* buffer) {
     
     if (l->length < 1) return 1;
-    if (buffer != NULL) memcpy(buffer, l->elements[0], l->elementSize);
+    if (buffer != NULL) memcpy(buffer, l->elements[0], l->element_size);
     
     free(l->elements[0]);
     memmove(l->elements, l->elements + 1, (l->length - 1) * sizeof(void*));
@@ -61,8 +61,8 @@ void List_Push(List* l, void* element) {
         l->size = l->size * 2;
     }
 
-    void* e = malloc(l->elementSize);
-    memmove(e, element, l->elementSize);
+    void* e = malloc(l->element_size);
+    memmove(e, element, l->element_size);
     l->elements[l->length] = e;
     l->length++;
 
@@ -75,8 +75,8 @@ void List_Unshift(List* l, void* element) {
         l->size = l->size * 2;
     }
 
-    void* e = malloc(l->elementSize);
-    memmove(e, element, l->elementSize);
+    void* e = malloc(l->element_size);
+    memmove(e, element, l->element_size);
     memmove(l->elements + 1, l->elements, l->length * sizeof(void*));
     l->elements[0] = e;
     l->length++;
@@ -103,8 +103,8 @@ void List_Add(List* l, int index, void* element) {
         l->size = l->size * 2;
     }
 
-    void* e = malloc(l->elementSize);
-    memmove(e, element, l->elementSize);
+    void* e = malloc(l->element_size);
+    memmove(e, element, l->element_size);
     memmove(l->elements + index + 1, l->elements + index, (l->length - index) * sizeof(void*));
     l->elements[index] = e;
     l->length++;
@@ -112,9 +112,9 @@ void List_Add(List* l, int index, void* element) {
 }
 
 void List_Clear(List* l) {
-    size_t elementSize = l->elementSize;
+    size_t element_size = l->element_size;
     List_Free(l);
-    List_Init(l, elementSize);
+    List_Init(l, element_size);
 }
 
 void List_Free(List* l) {
