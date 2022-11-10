@@ -83,19 +83,18 @@ void List_Unshift(List* l, void* element) {
 
 }
 
-void List_Add(List* l, int index, void* element) {
+int List_Add(List* l, int index, void* element) {
 
-    if (index < 0) index = 0;
-    if (index > l->length) index = l->length;
+    if (index < 0 || index > l->length) return 1;
     
     if (index == 0) {
         List_Unshift(l, element);
-        return;
+        return 0;
     }
 
     if (index == l->length) {
         List_Push(l, element);
-        return;
+        return 0;
     }
 
     if (l->length >= l->size) {
@@ -108,7 +107,8 @@ void List_Add(List* l, int index, void* element) {
     memmove(l->elements + index + 1, l->elements + index, (l->length - index) * sizeof(void*));
     l->elements[index] = e;
     l->length++;
-
+    
+    return 0;
 }
 
 void List_Clear(List* l) {
