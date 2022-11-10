@@ -16,7 +16,7 @@ MACRO(HEADER_DIRECTORIES return_list)
 ENDMACRO()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall -g")
-set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -fsanitize=address")
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 HEADER_DIRECTORIES(header_directories)
@@ -32,13 +32,15 @@ target_link_libraries(${project_name} pthread)
 target_link_libraries(${project_name} -static)
 endif()
 
-target_link_libraries(${project_name} ${project_library})
-
-add_executable(${project_test} tests/main.c)
-target_link_libraries(${project_test} ${project_name})
 enable_testing()
 
-add_test(
-    NAME ${project_test}
-    COMMAND $<TARGET_FILE:${project_test}>
-)
+file(GLOB_RECURSE test_filepaths tests/*.c)
+foreach(test_filepath ${test_filepaths})
+    get_filename_component(test_file ${test_filepath} NAME_WE)
+    add_executable(${test_file} ${test_filepath})
+    target_link_libraries(${test_file} ${project_name})
+    add_test(
+        NAME ${test_file}
+        COMMAND $<TARGET_FILE:${test_file}>
+    )
+endforeach()
