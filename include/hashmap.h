@@ -47,6 +47,25 @@ Example:
 void HashMap_Init(HashMap* h, size_t key_size, size_t value_size);
 
 /*
+Returns the number of elements that are stored in the HashMap.
+
+Inputs:
+ - HashMap* h: the memory address of the HashMap structure.
+
+Outputs:
+ - int: the number of elements that are current stored in the hashmap
+
+Time Complexity: O(1)
+
+Example:
+ - This gets the size of the hashmap
+ 
+    int size = HashMap_Size(h);
+
+*/
+int HashMap_Size(HashMap* h);
+
+/*
 Given a key, gets the associated value of the key in the HashMap.
 
 Inputs:

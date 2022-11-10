@@ -5,7 +5,7 @@
 #include "siphash.h"
 #include "hashmap.h"
 
-#define HASHMAP_INITIAL_N 32
+#define HASHMAP_INITIAL_N 5
 
 uint64_t rand_uint64(void) {
     uint64_t r = 0;
@@ -45,6 +45,10 @@ void _HashMap_Init(HashMap* h, size_t n, size_t key_size, size_t value_size) {
 
 void HashMap_Init(HashMap* h, size_t key_size, size_t value_size) {
     _HashMap_Init(h, HASHMAP_INITIAL_N, key_size, value_size);
+}
+
+int HashMap_Size(HashMap* h) {
+    return h->size;
 }
 
 int HashMap_Get(HashMap* h, void* key, void* buffer) {
@@ -256,7 +260,7 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
             KeyValue* left_pair = h->left + computed_hash;
 
             // Compute right hash of the left pair
-            computed_hash = hash(pair->key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
+            computed_hash = hash(left_pair->key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
             KeyValue* right_pair = h->right + computed_hash;
             
             bool exit_flag = 0;
@@ -271,6 +275,12 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
             }
 
+            // Store the right pair in a temporary buffer
+            void* tmp_key = malloc(h->key_size);
+            void* tmp_value = malloc(h->value_size);
+            memcpy(tmp_key, right_pair->key, h->key_size);
+            memcpy(tmp_value, right_pair->value, h->value_size);
+
             // Move the left pair into the right pair
             memcpy(right_pair->key, left_pair->key, h->key_size);
             memcpy(right_pair->value, left_pair->value, h->value_size);
@@ -281,14 +291,18 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
             // We have found a successful home, for everybody :)
             if (exit_flag == 1) {
-                
-                // Increment the size and return
+                // Increment the size, free memory and return
                 h->size++;
+                free(tmp_key);
+                free(tmp_value);
                 return;
             }
 
-            // Left pair is now homeless :(
-            displaced_pair = left_pair;
+            // Right pair is now homeless :(
+            memcpy(displaced_pair->key, tmp_key, h->key_size);
+            memcpy(displaced_pair->value, tmp_value, h->value_size);
+            free(tmp_key);
+            free(tmp_value);
 
         }
 
@@ -300,7 +314,7 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
             KeyValue* right_pair = h->right + computed_hash;
 
             // Compute left hash of the right pair
-            computed_hash = hash(pair->key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
+            computed_hash = hash(right_pair->key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
             KeyValue* left_pair = h->left + computed_hash;
             
             bool exit_flag = 0;
@@ -315,6 +329,12 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
             }
 
+            // Store the left pair in a temporary buffer
+            void* tmp_key = malloc(h->key_size);
+            void* tmp_value = malloc(h->value_size);
+            memcpy(tmp_key, left_pair->key, h->key_size);
+            memcpy(tmp_value, left_pair->value, h->value_size);
+
             // Move the right pair into the left pair
             memcpy(left_pair->key, right_pair->key, h->key_size);
             memcpy(left_pair->value, right_pair->value, h->value_size);
@@ -325,14 +345,18 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
             // We have found a successful home, for everybody :)
             if (exit_flag == 1) {
-
                 // Increment the size and return
                 h->size++;
+                free(tmp_key);
+                free(tmp_value);
                 return;
             }
 
-            // Right pair is now homeless :(
-            displaced_pair = right_pair;
+            // Left pair is now homeless :(
+            memcpy(displaced_pair->key, tmp_key, h->key_size);
+            memcpy(displaced_pair->value, tmp_value, h->value_size);
+            free(tmp_key);
+            free(tmp_value);
 
         }
 
@@ -365,85 +389,3 @@ void HashMap_Free(HashMap* h) {
     free(h->left);
     free(h->right);
 }
-
-/*
-#include <stdio.h>
-int main() {
-
-    HashMap* h = malloc(sizeof(HashMap));
-    HashMap_Init(h, sizeof(int), sizeof(int));
-    
-    int k1 = 1;
-    int v1 = 100;
-
-    int k2 = 2;
-    int v2 = 200;
-
-    int k3 = 3;
-    int v3 = 300;
-
-    int k4 = 4;
-    int v4 = 400;
-
-    int k5 = 5;
-    int v5 = 500;
-
-    int k6 = 6;
-    int v6 = 600;
-
-    int k7 = 7;
-    int v7 = 700;
-
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Put(h, &k1, &v1);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Put(h, &k2, &v2);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Put(h, &k3, &v3);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Put(h, &k4, &v4);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Put(h, &k5, &v5);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Put(h, &k6, &v6);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Put(h, &k7, &v7);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    
-    int buffer;
-    HashMap_Get(h, &k1, &buffer);
-    printf("%d\n", buffer);
-    HashMap_Get(h, &k2, &buffer);
-    printf("%d\n", buffer);
-    HashMap_Get(h, &k3, &buffer);
-    printf("%d\n", buffer);
-    HashMap_Get(h, &k4, &buffer);
-    printf("%d\n", buffer);
-    HashMap_Get(h, &k5, &buffer);
-    printf("%d\n", buffer);
-    HashMap_Get(h, &k6, &buffer);
-    printf("%d\n", buffer);
-    HashMap_Get(h, &k7, &buffer);
-    printf("%d\n", buffer);
-
-    HashMap_Remove(h, &k4);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Remove(h, &k7);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Remove(h, &k6);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Remove(h, &k1);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Remove(h, &k2);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Remove(h, &k5);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-    HashMap_Remove(h, &k3);
-    printf("SIZE: %ld N: %ld\n", h->size, h->n);
-
-    HashMap_Free(h);
-    free(h);
-
-    return 0;
-}
-*/
