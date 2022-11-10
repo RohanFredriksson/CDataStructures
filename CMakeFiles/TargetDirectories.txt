@@ -1,0 +1,5 @@
+/mnt/c/Users/Rohan/Desktop/Programming/c/DataStructures/CMakeFiles/datastructures.dir
+/mnt/c/Users/Rohan/Desktop/Programming/c/DataStructures/CMakeFiles/datastructures_test.dir
+/mnt/c/Users/Rohan/Desktop/Programming/c/DataStructures/CMakeFiles/test.dir
+/mnt/c/Users/Rohan/Desktop/Programming/c/DataStructures/CMakeFiles/edit_cache.dir
+/mnt/c/Users/Rohan/Desktop/Programming/c/DataStructures/CMakeFiles/rebuild_cache.dir

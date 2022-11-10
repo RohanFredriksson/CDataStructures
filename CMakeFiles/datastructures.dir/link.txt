@@ -1,0 +1,2 @@
+/usr/bin/ar qc libdatastructures.a CMakeFiles/datastructures.dir/src/hashmap.c.o CMakeFiles/datastructures.dir/src/list.c.o
+/usr/bin/ranlib libdatastructures.a

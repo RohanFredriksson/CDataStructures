@@ -1,0 +1,1 @@
+/usr/bin/cc  -std=c11 -Wall -g -static-libgcc -static-libstdc++ CMakeFiles/datastructures_test.dir/tests/main.c.o -o datastructures_test  libdatastructures.a 
