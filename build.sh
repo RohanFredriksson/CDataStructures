@@ -10,7 +10,7 @@ printf " Creating Makefile\n"
 printf "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n"
 printf "\n"
 
-cmake .. -DDO_TESTING=1
+cmake .. -DENABLE_TESTING=1
 if [ $? != 0 ]; then
     exit 1
 fi

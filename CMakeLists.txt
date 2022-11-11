@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.14)
 set(project_name datastructures)
 project(${project_name})
 
-SET(DO_TESTING 0 CACHE BOOL 0)
+SET(ENABLE_TESTING 0 CACHE BOOL 0)
 
 MACRO(HEADER_DIRECTORIES return_list)
     FILE(GLOB_RECURSE new_list include/*.h)
@@ -33,7 +33,7 @@ if (WIN32)
     target_link_libraries(${project_name} -static)
 endif()
 
-if (${DO_TESTING}) 
+if (${ENABLE_TESTING}) 
     enable_testing()
     file(GLOB_RECURSE test_filepaths tests/*.c)
     foreach(test_filepath ${test_filepaths})
