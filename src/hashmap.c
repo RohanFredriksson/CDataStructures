@@ -5,7 +5,7 @@
 #include "siphash.h"
 #include "hashmap.h"
 
-#define HASHMAP_INITIAL_N 5
+#define HASHMAP_INITIAL_N 16
 
 uint64_t rand_uint64(void) {
     uint64_t r = 0;
