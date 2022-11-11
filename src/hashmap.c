@@ -53,6 +53,9 @@ int HashMap_Size(HashMap* h) {
 
 int HashMap_Get(HashMap* h, void* key, void* buffer) {
 
+    // If the buffer is null, we cannot write to it, return 1.
+    if (buffer == NULL) {return 2;}
+
     KeyValue* pair;
     int computed_hash;
 

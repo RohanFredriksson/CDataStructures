@@ -7,49 +7,88 @@ int main() {
 
     // Initialise the map
     int flag = 0;
-    HashMap* h = malloc(sizeof(HashMap));
-    HashMap_Init(h, sizeof(int), sizeof(int));
+    HashMap h;
+    HashMap_Init(&h, sizeof(int), sizeof(int));
     
     // Put a lot of elements in the map to test it.
     for (int i = 0; i < NUM_ELEMENTS; i++) {
+        
         int key = i;
         int value = i * i;
-        HashMap_Put(h, &key, &value);
-        if (HashMap_Size(h) != i+1) {flag = 1;}
 
-        int k = 0;
-        for (int j = 0; j < h->n; j++) {
+        HashMap_Put(&h, &key, &value);
 
-            KeyValue* left = h->left + j;
-            KeyValue* right = h->right + j;
-
-            if (left->key != NULL) {k++;}
-            if (right->key != NULL) {k++;}
-
-        }
-        //printf("k: %d\tsize: %d\n", k, HashMap_Size(h));
+        // SIZE OF THE MAP SHOULD INCREASE WHEN INPUTTING INTO THE MAP
+        if (HashMap_Size(&h) != i+1) {flag = 1;}
 
     }
     
     // Retrieve every element from the map.
     for (int i = NUM_ELEMENTS - 1; i >= 0; i--) {
+        
         int buffer;
-        HashMap_Get(h, &i, &buffer);
+        HashMap_Get(&h, &i, &buffer);
+
+        // THE CORRECT ELEMENT SHOULD BE STORED AT EACH KEY
+        // EACH VALUE IS i*i THE KEY
         if (buffer != i*i) {flag = 1;}
+
     }
 
-    // Remove every even element key from the map.
+    // Remove every even key from the map.
     int k = 0;
-    int n = HashMap_Size(h);
+    int n = HashMap_Size(&h);
     for (int i = 0; i < n; i = i + 2) {
+        
         int key = i;
         k++;
-        if (HashMap_Remove(h, &key)) {flag = 1;}
+
+        // REMOVE SHOULD RETURN 0, ALL KEYS CAN BE REMOVED FROM THE MAP
+        if (HashMap_Remove(&h, &key) != 0) {flag = 1;}
+
     }
-    if (HashMap_Size(h) != n-k) {flag = 1;}
+
+    // K KEYS MUST HAVE BEEN REMOVED FROM THE MAP
+    if (HashMap_Size(&h) != n-k) {flag = 1;}
+
+    // Attempt to get every even key from the map.
+    for (int i = 0; i < n; i = i + 2) {
+        
+        int key = i;
+        int buffer;
+
+        // GET SHOULD RETURN 1, SINCE KEY DOES NOT EXIST
+        if (HashMap_Get(&h, &key, &buffer) != 1) {flag = 1;}
+
+    }
+
+    // Attempt to get every odd key from the map.
+    for (int i = 1; i < n; i = i + 2) {
+        
+        int key = i;
+        int buffer;
+
+        // GET SHOULD RETURN 0, SINCE KEY DOES NOT EXISTS
+        if (HashMap_Get(&h, &key, &buffer) != 0) {flag = 1;}
+        
+        // THE CORRECT ELEMENT SHOULD BE STORED AT EACH KEY
+        // EACH VALUE IS i*i THE KEY
+        if (buffer != i*i) {flag = 1;}
+
+    }
+
+    // Get a key not in the map
+    int key = 1010101;
+    int buffer;
+
+    // GET SHOULD RETURN 1, SINCE KEY DOES NOT EXIST
+    if (HashMap_Get(&h, &key, &buffer) != 1) {flag = 1;}
+
+    key = 1;
+    // GET SHOULD RETURN 2, BUFFER IS NULL
+    if (HashMap_Get(&h, &key, NULL) != 2) {flag = 1;}
 
     // Free the map memory
-    HashMap_Free(h);
-    free(h);
+    HashMap_Free(&h);
     return flag;
 }

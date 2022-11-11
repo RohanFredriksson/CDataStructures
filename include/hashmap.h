@@ -100,6 +100,7 @@ Inputs:
 Outputs:
  - 0: if the key/value pair was successfully removed from the map.
  - 1: if the key could not be found in the map.
+ - 2: if the buffer could not be written to i.e. buffer = NULL.
 
 Time Complexity: O(1)
 
