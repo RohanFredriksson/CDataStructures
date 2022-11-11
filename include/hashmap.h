@@ -135,6 +135,22 @@ Example:
 void HashMap_Put(HashMap* h, void* key, void* value);
 
 /*
+Clears all key-value pairs from a given HashMap structure.
+
+Inputs:
+ - HashMap* h: the memory address of the HashMap structure.
+
+Time Complexity: O(n)
+
+Example:
+ - This clears a hashmap.
+
+    HashMap_Clear(h);
+
+*/
+void HashMap_Clear(HashMap* h);
+
+/*
 Frees all memory associated with an initialised HashMap structure.
 
 Inputs:

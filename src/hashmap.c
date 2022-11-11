@@ -368,6 +368,13 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
 }
 
+void HashMap_Clear(HashMap* h) {
+    size_t key_size = h->key_size;
+    size_t value_size = h->value_size;
+    HashMap_Free(h);
+    HashMap_Init(h, key_size, value_size);
+}
+
 void HashMap_Free(HashMap* h) {
 
     KeyValue* pair;
