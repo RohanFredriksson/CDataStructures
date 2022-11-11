@@ -81,6 +81,7 @@ Inputs:
 Outputs:
  - 0: if the list is not empty and a value is popped off the list.
  - 1: if the list is empty.
+ - 2: if the buffer could not be written to i.e. buffer = NULL.
 
 Time Complexity: O(1)
 
