@@ -26,19 +26,15 @@ void _HashMap_Init(HashMap* h, size_t n, size_t key_size, size_t value_size) {
     h->size = 0;
     h->n = n;
 
-    h->left = malloc(n * sizeof(KeyValue));
+    h->array = malloc(2 * n * sizeof(KeyValue));
     h->left_seed_0 = rand_uint64();
     h->left_seed_1 = rand_uint64();
-
-    h->right = malloc(n * sizeof(KeyValue));
     h->right_seed_0 = rand_uint64();
     h->right_seed_1 = rand_uint64();
 
-    for (int i = 0; i < n; i++) {
-        h->left[i].key = NULL;
-        h->left[i].value = NULL;
-        h->right[i].key = NULL;
-        h->right[i].value = NULL;
+    for (int i = 0; i < 2 * n; i++) {
+        h->array[i].key = NULL;
+        h->array[i].value = NULL;
     }
 
 }
@@ -61,7 +57,7 @@ int HashMap_Get(HashMap* h, void* key, void* buffer) {
 
     // Compute left hash
     computed_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
-    pair = h->left + computed_hash;
+    pair = h->array + computed_hash;
     
     // If key is in the left table
     if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
@@ -72,7 +68,7 @@ int HashMap_Get(HashMap* h, void* key, void* buffer) {
 
     // Compute right hash
     computed_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
-    pair = h->right + computed_hash;
+    pair = h->array + h->n + computed_hash;
 
     // If key is in the right table
     if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
@@ -92,14 +88,9 @@ void HashMap_Grow(HashMap* h) {
     _HashMap_Init(&new_h, 2 * h->n, h->key_size, h->value_size);
 
     // Move all key value pairs from the old map to the new one.
-    for (int i = 0; i < h->n; i++) {
-
-        KeyValue* left = h->left + i;
-        KeyValue* right = h->right + i;
-
-        if (left->key != NULL) {HashMap_Put(&new_h, left->key, left->value);}
-        if (right->key != NULL) {HashMap_Put(&new_h, right->key, right->value);}
-
+    for (int i = 0; i < 2 * h->n; i++) {
+        KeyValue* current = h->array + i;
+        if (current->key != NULL) {HashMap_Put(&new_h, current->key, current->value);}
     }
 
     // Destroy the old hashmap
@@ -117,8 +108,7 @@ int HashMap_Remove(HashMap* h, void* key) {
 
     // Compute left hash
     computed_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
-    
-    pair = h->left + computed_hash;
+    pair = h->array + computed_hash;
     
     // If key is in the left table
     if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
@@ -139,7 +129,7 @@ int HashMap_Remove(HashMap* h, void* key) {
 
     // Compute right hash
     computed_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
-    pair = h->right + computed_hash;
+    pair = h->array + h->n + computed_hash;
 
     // If key is in the right table
     if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
@@ -175,7 +165,7 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
     // Compute left hash
     computed_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
-    pair = h->left + computed_hash;
+    pair = h->array + computed_hash;
 
     // If spot in left table is empty
     if (pair->key == NULL) {
@@ -213,7 +203,7 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
     // Compute right hash
     computed_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
-    pair = h->right + computed_hash;
+    pair = h->array + h->n + computed_hash;
 
     // If key is in the right table
     if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
@@ -260,11 +250,11 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
             // Compute left hash
             computed_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
-            KeyValue* left_pair = h->left + computed_hash;
+            KeyValue* left_pair = h->array + computed_hash;
 
             // Compute right hash of the left pair
             computed_hash = hash(left_pair->key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
-            KeyValue* right_pair = h->right + computed_hash;
+            KeyValue* right_pair = h->array + h->n + computed_hash;
             
             bool exit_flag = 0;
             if (right_pair->key == NULL) {
@@ -278,11 +268,15 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
             }
 
-            // Store the right pair in a temporary buffer
-            void* tmp_key = malloc(h->key_size);
-            void* tmp_value = malloc(h->value_size);
-            memcpy(tmp_key, right_pair->key, h->key_size);
-            memcpy(tmp_value, right_pair->value, h->value_size);
+            // If we cant exit, store the right pair in a temporary buffer
+            void* tmp_key; 
+            void* tmp_value; 
+            if (exit_flag == 0) {
+                tmp_key = malloc(h->key_size);
+                tmp_value = malloc(h->value_size);
+                memcpy(tmp_key, right_pair->key, h->key_size);
+                memcpy(tmp_value, right_pair->value, h->value_size);
+            }
 
             // Move the left pair into the right pair
             memcpy(right_pair->key, left_pair->key, h->key_size);
@@ -296,8 +290,6 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
             if (exit_flag == 1) {
                 // Increment the size, free memory and return
                 h->size++;
-                free(tmp_key);
-                free(tmp_value);
                 return;
             }
 
@@ -314,11 +306,11 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
             // Compute right hash
             computed_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
-            KeyValue* right_pair = h->right + computed_hash;
+            KeyValue* right_pair = h->array + h->n + computed_hash;
 
             // Compute left hash of the right pair
             computed_hash = hash(right_pair->key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
-            KeyValue* left_pair = h->left + computed_hash;
+            KeyValue* left_pair = h->array + computed_hash;
             
             bool exit_flag = 0;
             if (right_pair->key == NULL) {
@@ -332,11 +324,15 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
             }
 
-            // Store the left pair in a temporary buffer
-            void* tmp_key = malloc(h->key_size);
-            void* tmp_value = malloc(h->value_size);
-            memcpy(tmp_key, left_pair->key, h->key_size);
-            memcpy(tmp_value, left_pair->value, h->value_size);
+            // If we cant exit, store the right pair in a temporary buffer
+            void* tmp_key; 
+            void* tmp_value; 
+            if (exit_flag == 0) {
+                tmp_key = malloc(h->key_size);
+                tmp_value = malloc(h->value_size);
+                memcpy(tmp_key, left_pair->key, h->key_size);
+                memcpy(tmp_value, left_pair->value, h->value_size);
+            }
 
             // Move the right pair into the left pair
             memcpy(left_pair->key, right_pair->key, h->key_size);
@@ -350,8 +346,6 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
             if (exit_flag == 1) {
                 // Increment the size and return
                 h->size++;
-                free(tmp_key);
-                free(tmp_value);
                 return;
             }
 
@@ -377,18 +371,13 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 void HashMap_Free(HashMap* h) {
 
     KeyValue* pair;
-    for (int i = 0; i < h->n; i++) {
+    for (int i = 0; i < 2 * h->n; i++) {
         
-        pair = h->left + i;
-        if (pair->key != NULL) {free(pair->key);}
-        if (pair->value != NULL) {free(pair->value);}
-
-        pair = h->right + i;
+        pair = h->array + i;
         if (pair->key != NULL) {free(pair->key);}
         if (pair->value != NULL) {free(pair->value);}
 
     }
 
-    free(h->left);
-    free(h->right);
+    free(h->array);
 }

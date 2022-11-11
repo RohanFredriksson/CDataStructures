@@ -16,11 +16,10 @@ struct HashMap {
     size_t size;
     size_t n;
 
-    KeyValue* left;
+    KeyValue* array;
+    
     uint64_t left_seed_0;
     uint64_t left_seed_1;
-
-    KeyValue* right;
     uint64_t right_seed_0;
     uint64_t right_seed_1;
 
