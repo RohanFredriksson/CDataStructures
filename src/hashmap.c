@@ -194,9 +194,6 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
         // Copy the value data into the allocated space, and return
         memcpy(pair->value, value, h->value_size);
-        
-        // Increment the size and return
-        h->size++;
         return;
 
     }
@@ -204,23 +201,6 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
     // Compute right hash
     computed_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
     pair = h->array + h->n + computed_hash;
-
-    // If key is in the right table
-    if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
-        
-        // If there is no memory allocated at this key, allocate some.
-        if (pair->value == NULL) {
-            pair->value = malloc(h->value_size);
-        }
-
-        // Copy the value data into the allocated space, and return
-        memcpy(pair->value, value, h->value_size);
-        
-        // Increment the size and return
-        h->size++;
-        return;
-
-    }
 
     // If spot in right table is empty
     if (pair->key == NULL) {
@@ -235,6 +215,20 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
         
         // Increment the size and return
         h->size++;
+        return;
+
+    }
+
+    // If key is in the right table
+    if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
+        
+        // If there is no memory allocated at this key, allocate some.
+        if (pair->value == NULL) {
+            pair->value = malloc(h->value_size);
+        }
+
+        // Copy the value data into the allocated space, and return
+        memcpy(pair->value, value, h->value_size);
         return;
 
     }
