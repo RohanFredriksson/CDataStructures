@@ -90,11 +90,11 @@ void HashMap_Grow(HashMap* h) {
     // Move all key value pairs from the old map to the new one.
     for (int i = 0; i < 2 * h->n; i++) {
         KeyValue* current = h->array + i;
-        if (current->key != NULL) {HashMap_Put(&new_h, current->key, current->value);}
+        if (current->key != NULL) {_HashMap_Put(&new_h, current->key, current->value);}
     }
 
-    // Destroy the old hashmap
-    HashMap_Free(h);
+    // Free all required memory from the old hashmap
+    free(h->array);
 
     // Move the new hashmap into the location of the old one.
     memcpy(h, &new_h, sizeof(HashMap));
@@ -150,6 +150,179 @@ int HashMap_Remove(HashMap* h, void* key) {
 
     // Key was not found
     return 1;
+
+}
+
+void _HashMap_Put(HashMap* h, void* key, void* value) {
+
+    // If the load factor exceeds 0.5, rebuild the table to improve performance
+    if (h->size > h->n / 2) {
+        HashMap_Grow(h);
+    }
+
+    KeyValue* pair;
+    int computed_hash;
+
+    // Compute left hash
+    computed_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
+    pair = h->array + computed_hash;
+
+    // If spot in left table is empty
+    if (pair->key == NULL) {
+        
+        // Set the key, value data in the spot
+        pair->key = key;
+        pair->value = value;
+        
+        // Increment the size and return
+        h->size++;
+        return;
+
+    }
+
+    // If key is in the left table
+    if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) { 
+        
+        // Set the value data into the space, and return
+        pair->value = value;
+        return;
+
+    }
+
+    // Compute right hash
+    computed_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
+    pair = h->array + h->n + computed_hash;
+
+    // If spot in right table is empty
+    if (pair->key == NULL) {
+        
+        // Set the key, value data in the spot
+        pair->key = key;
+        pair->value = value;
+        
+        // Increment the size and return
+        h->size++;
+        return;
+
+    }
+
+    // If key is in the right table
+    if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
+        
+        // Set the value data into the space, and return
+        pair->value = value;
+        return;
+
+    }
+
+    KeyValue new_pair = {key, value};
+    KeyValue* displaced_pair = &new_pair;
+
+    // Start an eviction sequence
+    for (int i = 0; i < 2*h->n; i++) {
+
+        // If i is even, try and place it in the left table.
+        if (i % 2 == 0) {
+
+            // Compute left hash
+            computed_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
+            KeyValue* left_pair = h->array + computed_hash;
+
+            // Compute right hash of the left pair
+            computed_hash = hash(left_pair->key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
+            KeyValue* right_pair = h->array + h->n + computed_hash;
+            
+            bool exit_flag = 0;
+            if (right_pair->key == NULL) {
+                exit_flag = 1;
+            }
+
+            // If we cant exit, store the right pair in a temporary buffer
+            void* tmp_key; 
+            void* tmp_value; 
+            if (exit_flag == 0) {
+                tmp_key = right_pair->key;
+                tmp_value = right_pair->value;
+            }
+
+            // Move the left pair into the right pair
+            right_pair->key = left_pair->key;
+            right_pair->value = left_pair->value;
+
+            // Move the displaced pair into the left pair
+            left_pair->key = displaced_pair->key;
+            left_pair->value = displaced_pair->value;
+
+            // We have found a successful home, for everybody :)
+            if (exit_flag == 1) {
+
+                // Increment the size, free memory and return
+                h->size++;
+                return;
+
+            }
+
+            // Right pair is now homeless :(
+            displaced_pair->key = tmp_key;
+            displaced_pair->value = tmp_value;
+
+        }
+
+        // Try and place it in the right table.
+        else {
+
+            // Compute right hash
+            computed_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
+            KeyValue* right_pair = h->array + h->n + computed_hash;
+
+            // Compute left hash of the right pair
+            computed_hash = hash(right_pair->key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
+            KeyValue* left_pair = h->array + computed_hash;
+            
+            bool exit_flag = 0;
+            if (right_pair->key == NULL) {
+                exit_flag = 1;
+            }
+
+            // If we cant exit, store the left pair in a temporary buffer
+            void* tmp_key; 
+            void* tmp_value; 
+            if (exit_flag == 0) {
+                tmp_key = left_pair->key;
+                tmp_value = left_pair->value;
+            }
+
+            // Move the right pair into the left pair
+            left_pair->key = right_pair->key;
+            left_pair->value = right_pair->value;
+
+            // Move the displaced pair into the right pair
+            right_pair->key = displaced_pair->key;
+            right_pair->value = displaced_pair->value;
+
+            // We have found a successful home, for everybody :)
+            if (exit_flag == 1) {
+
+                // Increment the size and return
+                h->size++;
+                return;
+
+            }
+
+            // Left pair is now homeless :(
+            displaced_pair->key = tmp_key;
+            displaced_pair->value = tmp_value;
+
+        }
+
+    }   
+
+    // If the eviction sequence is greater than 2n, then there is a cycle.
+    // We must rebuild the entire hash table.
+    HashMap_Grow(h);
+
+    // Move the displaced pair into the new one.
+    _HashMap_Put(h, key, value);
 
 }
 
@@ -318,7 +491,7 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
             }
 
-            // If we cant exit, store the right pair in a temporary buffer
+            // If we cant exit, store the left pair in a temporary buffer
             void* tmp_key; 
             void* tmp_value; 
             if (exit_flag == 0) {
