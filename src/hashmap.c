@@ -326,34 +326,22 @@ void _HashMap_Put(HashMap* h, void* key, void* value) {
 
 }
 
-void HashMap_Put(HashMap* h, void* key, void* value) {
+bool _HashMap_TryPut(HashMap* h, KeyValue* pair, void* key, void* value) {
 
-    // If the load factor exceeds 0.5, rebuild the table to improve performance
-    if (h->size > h->n / 2) {
-        HashMap_Grow(h);
-    }
-
-    KeyValue* pair;
-    int computed_hash;
-
-    // Compute left hash
-    computed_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
-    pair = h->array + computed_hash;
-
-    // If spot in left table is empty
+    // If pair is empty.
     if (pair->key == NULL) {
         
-        // Allocate memory to hold the key pair
+        // Allocate memory to hold the key, value pair
         pair->key = malloc(h->key_size);
         pair->value = malloc(h->value_size);
         
-        // Copy the key, value data into the spot
+        // Copy the key, value pair into the spot
         memcpy(pair->key, key, h->key_size);
         memcpy(pair->value, value, h->value_size);
         
         // Increment the size and return
         h->size++;
-        return;
+        return 1;
 
     }
 
@@ -367,160 +355,102 @@ void HashMap_Put(HashMap* h, void* key, void* value) {
 
         // Copy the value data into the allocated space, and return
         memcpy(pair->value, value, h->value_size);
-        return;
+        return 1;
 
     }
 
-    // Compute right hash
-    computed_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
-    pair = h->array + h->n + computed_hash;
+    return 0;
+}
 
-    // If spot in right table is empty
-    if (pair->key == NULL) {
-        
-        // Allocate memory to hold the key pair
-        pair->key = malloc(h->key_size);
-        pair->value = malloc(h->value_size);
-        
-        // Copy the key, value data into the spot
-        memcpy(pair->key, key, h->key_size);
-        memcpy(pair->value, value, h->value_size);
-        
-        // Increment the size and return
+bool _HashMap_Evict(HashMap* h, KeyValue* displaced, KeyValue* target, KeyValue* refuge) {
+    
+    bool exit_flag = 0;
+    if (refuge->key == NULL) {
+
+        // Allocate some memory to copy the target into refuge
+        refuge->key = malloc(h->key_size);
+        refuge->value = malloc(h->value_size);
+
+        // After the copies, we can return.
+        exit_flag = 1;
+
+    }
+
+    // If we cant exit, store the refuge pair in a temporary buffer
+    void* tmp_key; 
+    void* tmp_value; 
+    if (exit_flag == 0) {
+        tmp_key = refuge->key;
+        tmp_value = refuge->value;
+    }
+
+    // Move the target into the refuge
+    memcpy(refuge->key, target->key, h->key_size);
+    memcpy(refuge->value, target->value, h->value_size);
+
+    // Move the displaced into the target
+    memcpy(target->key, displaced->key, h->key_size);
+    memcpy(target->value, displaced->value, h->value_size);
+
+    // We have found a successful home, for everybody :)
+    if (exit_flag == 1) {
         h->size++;
-        return;
-
+        return 1;
     }
 
-    // If key is in the right table
-    if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
-        
-        // If there is no memory allocated at this key, allocate some.
-        if (pair->value == NULL) {
-            pair->value = malloc(h->value_size);
-        }
+    // Refuge pair is now homeless :(
+    memcpy(displaced->key, tmp_key, h->key_size);
+    memcpy(displaced->value, tmp_value, h->value_size);
+    return 0;
+}
 
-        // Copy the value data into the allocated space, and return
-        memcpy(pair->value, value, h->value_size);
-        return;
+void HashMap_Put(HashMap* h, void* key, void* value) {
 
-    }
+    KeyValue* left_pair;
+    KeyValue* right_pair;
+    int left_hash;
+    int right_hash;
 
+    // If the load factor exceeds 0.5, rebuild the table to improve performance
+    if (h->size > h->n / 2) {HashMap_Grow(h);}
+
+    // Try and put the key, value pair in the left spot.
+    left_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
+    left_pair = h->array + left_hash;
+    if (_HashMap_TryPut(h, left_pair, key, value)) {return;}
+
+    // Try and put the key, value pair in the right spot.
+    right_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
+    right_pair = h->array + h->n + right_hash;
+    if (_HashMap_TryPut(h, right_pair, key, value)) {return;}
+
+    // Start an eviction sequence
     KeyValue new_pair = {key, value};
     KeyValue* displaced_pair = &new_pair;
 
-    // Start an eviction sequence
     for (int i = 0; i < 2*h->n; i++) {
 
         // If i is even, try and place it in the left table.
         if (i % 2 == 0) {
 
-            // Compute left hash
-            computed_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
-            KeyValue* left_pair = h->array + computed_hash;
-
             // Compute right hash of the left pair
-            computed_hash = hash(left_pair->key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
-            KeyValue* right_pair = h->array + h->n + computed_hash;
+            right_hash = hash(left_pair->key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
+            right_pair = h->array + h->n + right_hash;
             
-            bool exit_flag = 0;
-            if (right_pair->key == NULL) {
-
-                // Allocate some memory to copy the left pair into the right
-                right_pair->key = malloc(h->key_size);
-                right_pair->value = malloc(h->value_size);
-
-                // After the copies, we can return.
-                exit_flag = 1;
-
-            }
-
-            // If we cant exit, store the right pair in a temporary buffer
-            void* tmp_key; 
-            void* tmp_value; 
-            if (exit_flag == 0) {
-                tmp_key = malloc(h->key_size);
-                tmp_value = malloc(h->value_size);
-                memcpy(tmp_key, right_pair->key, h->key_size);
-                memcpy(tmp_value, right_pair->value, h->value_size);
-            }
-
-            // Move the left pair into the right pair
-            memcpy(right_pair->key, left_pair->key, h->key_size);
-            memcpy(right_pair->value, left_pair->value, h->value_size);
-
-            // Move the displaced pair into the left pair
-            memcpy(left_pair->key, displaced_pair->key, h->key_size);
-            memcpy(left_pair->value, displaced_pair->value, h->value_size);
-
-            // We have found a successful home, for everybody :)
-            if (exit_flag == 1) {
-                // Increment the size, free memory and return
-                h->size++;
-                return;
-            }
-
-            // Right pair is now homeless :(
-            memcpy(displaced_pair->key, tmp_key, h->key_size);
-            memcpy(displaced_pair->value, tmp_value, h->value_size);
-            free(tmp_key);
-            free(tmp_value);
+            // Evict the left pair. If it is resolved, then return.
+            if (_HashMap_Evict(h, displaced_pair, left_pair, right_pair)) {return;}
 
         }
 
         // Try and place it in the right table.
         else {
 
-            // Compute right hash
-            computed_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
-            KeyValue* right_pair = h->array + h->n + computed_hash;
-
             // Compute left hash of the right pair
-            computed_hash = hash(right_pair->key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
-            KeyValue* left_pair = h->array + computed_hash;
+            left_hash = hash(right_pair->key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
+            left_pair = h->array + left_hash;
             
-            bool exit_flag = 0;
-            if (right_pair->key == NULL) {
-
-                // Allocate some memory to copy the left pair into the right
-                right_pair->key = malloc(h->key_size);
-                right_pair->value = malloc(h->value_size);
-                
-                // After the copies, we can return.
-                exit_flag = 1;
-
-            }
-
-            // If we cant exit, store the left pair in a temporary buffer
-            void* tmp_key; 
-            void* tmp_value; 
-            if (exit_flag == 0) {
-                tmp_key = malloc(h->key_size);
-                tmp_value = malloc(h->value_size);
-                memcpy(tmp_key, left_pair->key, h->key_size);
-                memcpy(tmp_value, left_pair->value, h->value_size);
-            }
-
-            // Move the right pair into the left pair
-            memcpy(left_pair->key, right_pair->key, h->key_size);
-            memcpy(left_pair->value, right_pair->value, h->value_size);
-
-            // Move the displaced pair into the right pair
-            memcpy(right_pair->key, displaced_pair->key, h->key_size);
-            memcpy(right_pair->value, displaced_pair->value, h->value_size);
-
-            // We have found a successful home, for everybody :)
-            if (exit_flag == 1) {
-                // Increment the size and return
-                h->size++;
-                return;
-            }
-
-            // Left pair is now homeless :(
-            memcpy(displaced_pair->key, tmp_key, h->key_size);
-            memcpy(displaced_pair->value, tmp_value, h->value_size);
-            free(tmp_key);
-            free(tmp_value);
+            // Evict the right pair. If it is resolved, then return.
+            if (_HashMap_Evict(h, displaced_pair, right_pair, left_pair)) {return;}
 
         }
 
