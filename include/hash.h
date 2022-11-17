@@ -1,7 +1,21 @@
 #include <stdint.h>
 
-#ifndef SIPHASH_H
-#define SIPHASH_H
+#ifndef HASH_H
+#define HASH_H
+
+uint64_t OAAT(const unsigned char* key) {
+    uint32_t out = 0;
+    while (*key != '\0') {
+        out += *key;
+        out += out << 10;
+        out ^= out >> 6;
+        key += 1;
+    }
+    out += out << 3;
+    out ^= out >> 11;
+    out += out << 15;
+    return (uint64_t) out;
+}
 
 //-----------------------------------------------------------------------------
 // SipHash reference C implementation

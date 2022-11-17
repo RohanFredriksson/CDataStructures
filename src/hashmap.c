@@ -2,14 +2,14 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
-#include "siphash.h"
+#include "hash.h"
 #include "hashmap.h"
 
 #define HASHMAP_INITIAL_N 16
 
 void _HashMap_Put(HashMap* h, void* key, void* value, bool allocate);
 
-uint64_t rand_uint64(void) {
+uint64_t _HashMap_Random(void) {
     uint64_t r = 0;
     for (int i = 0; i < 64; i += 15) {
         r = r * ((uint64_t) RAND_MAX + 1) + rand();
@@ -17,8 +17,29 @@ uint64_t rand_uint64(void) {
     return r;
 }
 
-uint64_t hash(const void *data, size_t len, uint64_t seed0, uint64_t seed1) {
-    return SIP64((uint8_t*)data, len, seed0, seed1);
+uint64_t _HashMap_Hash(const void *key, size_t key_size, uint64_t seed0, uint64_t seed1) {
+    if (key_size == 0) {return OAAT(key);}
+    return SIP64((uint8_t*)key, key_size, seed0, seed1);
+}
+
+void _HashMap_KeyCopy(HashMap* h, void* destination, void* key) {
+    if (h->key_size == 0) {memcpy(destination, key, strlen(key) + 1);}
+    else {memcpy(destination, key, h->key_size);}
+}
+
+void _HashMap_ValueCopy(HashMap* h, void* destination, void* value) {
+    if (h->value_size == 0) {memcpy(destination, value, strlen(value) + 1);}
+    else {memcpy(destination, value, h->value_size);}
+}
+
+void* _HashMap_KeyMalloc(HashMap* h, void* key) {
+    if (h->key_size == 0) {return malloc(strlen(key) + 1);}
+    return malloc(h->key_size);
+}
+
+void* _HashMap_ValueMalloc(HashMap* h, void* value) {
+    if (h->value_size == 0) {return malloc(strlen(value) + 1);}
+    return malloc(h->value_size);
 }
 
 void _HashMap_Init(HashMap* h, size_t n, size_t key_size, size_t value_size) {
@@ -29,10 +50,10 @@ void _HashMap_Init(HashMap* h, size_t n, size_t key_size, size_t value_size) {
     h->n = n;
 
     h->array = malloc(2 * n * sizeof(KeyValue));
-    h->left_seed_0 = rand_uint64();
-    h->left_seed_1 = rand_uint64();
-    h->right_seed_0 = rand_uint64();
-    h->right_seed_1 = rand_uint64();
+    h->left_seed_0 = _HashMap_Random();
+    h->left_seed_1 = _HashMap_Random();
+    h->right_seed_0 = _HashMap_Random();
+    h->right_seed_1 = _HashMap_Random();
 
     for (int i = 0; i < 2 * n; i++) {
         h->array[i].key = NULL;
@@ -58,24 +79,22 @@ int HashMap_Get(HashMap* h, void* key, void* buffer) {
     int computed_hash;
 
     // Compute left hash
-    computed_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
+    computed_hash = _HashMap_Hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
     pair = h->array + computed_hash;
     
     // If key is in the left table
     if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
-        // Store the value in the buffer, and return
-        memcpy(buffer, pair->value, h->value_size);
+        _HashMap_ValueCopy(h, buffer, pair->value);
         return 0;
     }
 
     // Compute right hash
-    computed_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
+    computed_hash = _HashMap_Hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
     pair = h->array + h->n + computed_hash;
 
     // If key is in the right table
     if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
-        // Store the value in the buffer, and return
-        memcpy(buffer, pair->value, h->value_size);
+        _HashMap_ValueCopy(h, buffer, pair->value);
         return 0;
     }
 
@@ -109,7 +128,7 @@ int HashMap_Remove(HashMap* h, void* key) {
     int computed_hash;
 
     // Compute left hash
-    computed_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
+    computed_hash = _HashMap_Hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
     pair = h->array + computed_hash;
     
     // If key is in the left table
@@ -130,7 +149,7 @@ int HashMap_Remove(HashMap* h, void* key) {
     }
 
     // Compute right hash
-    computed_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
+    computed_hash = _HashMap_Hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
     pair = h->array + h->n + computed_hash;
 
     // If key is in the right table
@@ -161,10 +180,10 @@ bool _HashMap_TryPut(HashMap* h, KeyValue* pair, void* key, void* value, bool al
     if (pair->key == NULL) {
         
         if (allocate) {
-            pair->key = malloc(h->key_size);
-            pair->value = malloc(h->value_size);
-            memcpy(pair->key, key, h->key_size);
-            memcpy(pair->value, value, h->value_size);
+            pair->key = _HashMap_KeyMalloc(h, key);
+            pair->value = _HashMap_ValueMalloc(h, value);
+            _HashMap_KeyCopy(h, pair->key, key);
+            _HashMap_ValueCopy(h, pair->value, value);
         } else {
             pair->key = key;
             pair->value = value;
@@ -179,8 +198,8 @@ bool _HashMap_TryPut(HashMap* h, KeyValue* pair, void* key, void* value, bool al
     if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) { 
         
         if (allocate) {
-            pair->value = malloc(h->value_size);
-            memcpy(pair->value, value, h->value_size);
+            pair->value = _HashMap_ValueMalloc(h, value);
+            _HashMap_ValueCopy(h, pair->value, value);
         } else {
             pair->value = value;
         }
@@ -200,10 +219,10 @@ bool _HashMap_Evict(HashMap* h, KeyValue* displaced, KeyValue* target, KeyValue*
     if (refuge->key == NULL) {
         
         if (allocate) {
-            tmp_key = malloc(h->key_size);
-            tmp_value = malloc(h->value_size);
-            memcpy(tmp_key, displaced->key, h->key_size);
-            memcpy(tmp_value, displaced->value, h->value_size);
+            tmp_key = _HashMap_KeyMalloc(h, displaced->key);
+            tmp_value = _HashMap_ValueMalloc(h, displaced->value);
+            _HashMap_KeyCopy(h, tmp_key, displaced->key);
+            _HashMap_ValueCopy(h, tmp_value, displaced->value);
             displaced->key = tmp_key;
             displaced->value = tmp_value;
         }
@@ -248,12 +267,12 @@ void _HashMap_Put(HashMap* h, void* key, void* value, bool allocate) {
     if (h->size > h->n / 2) {HashMap_Grow(h);}
 
     // Try and put the key, value pair in the left spot.
-    left_hash = hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
+    left_hash = _HashMap_Hash(key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
     left_pair = h->array + left_hash;
     if (_HashMap_TryPut(h, left_pair, key, value, allocate)) {return;}
 
     // Try and put the key, value pair in the right spot.
-    right_hash = hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
+    right_hash = _HashMap_Hash(key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
     right_pair = h->array + h->n + right_hash;
     if (_HashMap_TryPut(h, right_pair, key, value, allocate)) {return;}
 
@@ -267,7 +286,7 @@ void _HashMap_Put(HashMap* h, void* key, void* value, bool allocate) {
         if (i % 2 == 0) {
 
             // Compute right hash of the left pair
-            right_hash = hash(left_pair->key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
+            right_hash = _HashMap_Hash(left_pair->key, h->key_size, h->right_seed_0, h->right_seed_1) % h->n;
             right_pair = h->array + h->n + right_hash;
             
             // Evict the left pair. If it is resolved, then return.
@@ -279,7 +298,7 @@ void _HashMap_Put(HashMap* h, void* key, void* value, bool allocate) {
         else {
 
             // Compute left hash of the right pair
-            left_hash = hash(right_pair->key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
+            left_hash = _HashMap_Hash(right_pair->key, h->key_size, h->left_seed_0, h->left_seed_1) % h->n;
             left_pair = h->array + left_hash;
             
             // Evict the right pair. If it is resolved, then return.
