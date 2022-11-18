@@ -29,6 +29,9 @@ void _HashMap_Init(HashMap* h, size_t n, size_t key_size, size_t value_size) {
     h->n = n;
 
     h->array = malloc(2 * n * sizeof(KeyValue));
+    h->head = NULL;
+    h->tail = NULL;
+
     h->left_seed_0 = _HashMap_Random();
     h->left_seed_1 = _HashMap_Random();
     h->right_seed_0 = _HashMap_Random();
@@ -47,6 +50,10 @@ void HashMap_Init(HashMap* h, size_t key_size, size_t value_size) {
 
 int HashMap_Size(HashMap* h) {
     return h->size;
+}
+
+KeyValue* HashMap_Elements(HashMap* h) {
+    return h->head;
 }
 
 bool HashMap_Get(HashMap* h, void* key, void* buffer) {
@@ -82,15 +89,54 @@ bool HashMap_Get(HashMap* h, void* key, void* buffer) {
 
 }
 
+void _HashMap_PushToList(HashMap* h, KeyValue* pair) {
+
+    if (h->tail == NULL) {
+        h->head = pair;
+        h->tail = pair;
+        pair->next = NULL;
+        pair->prev = NULL;
+    } 
+    
+    else {
+        h->tail->next = pair;
+        pair->next = NULL;
+        pair->prev = h->tail;
+        h->tail = pair;
+    }
+    
+}
+
+void _HashMap_RemoveFromList(HashMap* h, KeyValue* pair) {
+
+    if (pair->prev == NULL) {
+        h->head = pair->next;
+        if (pair->next == NULL) {h->tail = NULL;}
+        else {h->head = pair->next;}
+    }
+
+    else if (pair->next == NULL) {
+        h->tail = pair->prev;
+        pair->prev->next = NULL;
+    }
+
+    else {
+        pair->prev->next = pair->next;
+        pair->next->prev = pair->prev;
+    }
+
+}
+
 void HashMap_Grow(HashMap* h) {
 
     HashMap new_h;
     _HashMap_Init(&new_h, 2 * h->n, h->key_size, h->value_size);
 
     // Move all key value pairs from the old map to the new one.
-    for (int i = 0; i < 2 * h->n; i++) {
-        KeyValue* current = h->array + i;
-        if (current->key != NULL) {_HashMap_Put(&new_h, current->key, current->value, 0);}
+    KeyValue* current = h->head;
+    while (current != NULL) {
+        _HashMap_Put(&new_h, current->key, current->value, 0);
+        current = current->next;
     }
 
     // Free all required memory from the old hashmap
@@ -121,6 +167,9 @@ bool HashMap_Remove(HashMap* h, void* key) {
         pair->key = NULL;
         pair->value = NULL;
 
+        // Remove from linked list
+        _HashMap_RemoveFromList(h, pair);
+
         // Reduce size, and return
         h->size--;
         return 1;
@@ -141,6 +190,9 @@ bool HashMap_Remove(HashMap* h, void* key) {
         // Set the pointers to null
         pair->key = NULL;
         pair->value = NULL;
+
+        // Remove from linked list
+        _HashMap_RemoveFromList(h, pair);
 
         // Reduce size, and return
         h->size--;
@@ -167,7 +219,10 @@ bool _HashMap_TryPut(HashMap* h, KeyValue* pair, void* key, void* value, bool al
             pair->key = key;
             pair->value = value;
         }
-        
+
+        // Add it to the linked list
+        _HashMap_PushToList(h, pair);
+
         // Increment the size and return
         h->size++;
         return 1;
@@ -206,7 +261,10 @@ bool _HashMap_Evict(HashMap* h, KeyValue* displaced, KeyValue* target, KeyValue*
             displaced->value = tmp_value;
         }
 
+        // Add the refuge pair to the linked list, raise flag
+        _HashMap_PushToList(h, refuge);
         exit_flag = 1;
+
     }
 
     // If we cant exit, store the refuge pair in a temporary buffer

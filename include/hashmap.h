@@ -7,6 +7,8 @@
 struct KeyValue {
     void* key;
     void* value;
+    struct KeyValue* next;
+    struct KeyValue* prev;
 };
 typedef struct KeyValue KeyValue;
 
@@ -18,6 +20,8 @@ struct HashMap {
     size_t n;
 
     KeyValue* array;
+    KeyValue* head;
+    KeyValue* tail;
     
     uint64_t left_seed_0;
     uint64_t left_seed_1;
@@ -64,6 +68,25 @@ Example:
 
 */
 int HashMap_Size(HashMap* h);
+
+/*
+Returns a linked list of elements that are stored in the HashMap.
+
+Inputs:
+ - HashMap* h: the memory address of the HashMap structure.
+
+Outputs:
+ - KeyValue*: a pointer to the first element in the HashMap.
+
+Time Complexity: O(1)
+
+Example:
+ - This gets the elements of the hashmap
+ 
+    KeyValue* elements = HashMap_Elements(h);
+
+*/
+KeyValue* HashMap_Elements(HashMap* h);
 
 /*
 Given a key, gets the associated value of the key in the HashMap.
