@@ -127,6 +127,33 @@ void _HashMap_RemoveFromList(HashMap* h, KeyValue* pair) {
 
 }
 
+void _HashMap_SwapInList(HashMap* h, KeyValue* a, KeyValue* b) {
+
+    if (a == b) {return;}
+
+    KeyValue* a_prev = a->prev;
+    KeyValue* a_next = a->next;
+    KeyValue* b_prev = b->prev;
+    KeyValue* b_next = b->next;
+
+    a->prev = b_prev;
+    a->next = b_next;
+    b->prev = a_prev;
+    b->next = a_next;
+
+    if (a_prev != NULL) {a_prev->next = b;}
+    if (a_next != NULL) {a_next->prev = b;}
+    if (b_prev != NULL) {b_prev->next = a;}
+    if (b_next != NULL) {b_next->prev = a;}
+
+    if (a->prev == NULL) {h->head = a;}
+    else if (b->prev == NULL) {h->head = b;}
+    
+    if (a->next == NULL) {h->tail = a;}
+    else if (b->next == NULL) {h->tail = b;}
+
+}
+
 void HashMap_Grow(HashMap* h) {
 
     HashMap new_h;
@@ -261,8 +288,9 @@ bool _HashMap_Evict(HashMap* h, KeyValue* displaced, KeyValue* target, KeyValue*
             displaced->value = tmp_value;
         }
 
-        // Add the refuge pair to the linked list, raise flag
+        // Add the refuge pair to the linked list
         _HashMap_PushToList(h, refuge);
+        _HashMap_SwapInList(h, target, refuge);
         exit_flag = 1;
 
     }

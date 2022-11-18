@@ -50,6 +50,14 @@ int main() {
         if (buffer != i*i) {flag = 1;}
     }
 
+    k = 1;
+    KeyValue* current = HashMap_Elements(&h);
+    while (current != NULL) {
+        if (k != *((int*) current->key)) {flag = 1;}
+        current = current->next;
+        k += 2;
+    }
+
     // Get a key not in the map
     int key = 1010101;
     int buffer;
