@@ -290,7 +290,6 @@ bool _HashMap_Evict(HashMap* h, KeyValue* displaced, KeyValue* target, KeyValue*
 
         // Add the refuge pair to the linked list
         _HashMap_PushToList(h, refuge);
-        _HashMap_SwapInList(h, target, refuge);
         exit_flag = 1;
 
     }
@@ -308,6 +307,9 @@ bool _HashMap_Evict(HashMap* h, KeyValue* displaced, KeyValue* target, KeyValue*
     // Move the displaced into the target
     target->key = displaced->key;
     target->value = displaced->value;
+
+    // Swap the order of the nodes in the linked list
+    _HashMap_SwapInList(h, target, refuge);
 
     // We have found a successful home, for everybody :)
     if (exit_flag == 1) {
