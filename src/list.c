@@ -15,39 +15,38 @@ int List_Length(List* l) {
     return l->length;
 }
 
-int List_Get(List* l, int index, void* buffer) {
-    if (index < 0 || index >= l->length) return 1;
-    if (buffer == NULL) return 2;
+bool List_Get(List* l, int index, void* buffer) {
+    if (index < 0 || index >= l->length || buffer == NULL) return 0;
     memcpy(buffer, l->elements[index], l->element_size);
-    return 0;
+    return 1;
 }
 
-int List_Pop(List* l, void* buffer) {
+bool List_Pop(List* l, void* buffer) {
     
-    if (l->length < 1) return 1;
+    if (l->length < 1) return 0;
     if (buffer != NULL) memcpy(buffer, l->elements[l->length-1], l->element_size);
     
     free(l->elements[l->length-1]);
     l->length--;
     
-    return 0;
+    return 1;
 }
 
-int List_Shift(List* l, void* buffer) {
+bool List_Shift(List* l, void* buffer) {
     
-    if (l->length < 1) return 1;
+    if (l->length < 1) return 0;
     if (buffer != NULL) memcpy(buffer, l->elements[0], l->element_size);
     
     free(l->elements[0]);
     memmove(l->elements, l->elements + 1, (l->length - 1) * sizeof(void*));
     l->length--;
     
-    return 0;
+    return 1;
 }
 
-int List_Remove(List* l, int index) {
+bool List_Remove(List* l, int index) {
     
-    if (index < 0 || index >= l->length) return 1;
+    if (index < 0 || index >= l->length) return 0;
     if (index == 0) return List_Shift(l, NULL);
     if (index == l->length - 1) return List_Pop(l, NULL);
     
@@ -55,7 +54,7 @@ int List_Remove(List* l, int index) {
     memmove(l->elements + index, l->elements + index + 1, (l->length - index - 1) * sizeof(void*));
     l->length--;
     
-    return 0;
+    return 1;
 }
 
 void List_Push(List* l, void* element) {
@@ -87,7 +86,7 @@ void List_Unshift(List* l, void* element) {
 
 }
 
-int List_Add(List* l, int index, void* element) {
+bool List_Add(List* l, int index, void* element) {
 
     if (index < 0 || index > l->length) return 1;
     

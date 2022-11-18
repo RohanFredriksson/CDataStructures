@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #ifndef LIST_H
 #define LIST_H
 
@@ -57,8 +59,8 @@ Inputs:
  - void* buffer: a memory address where the element will be stored if possible.
 
 Outputs:
- - 0: if the index supplied is in the bounds.
- - 1: if the index supplied is out of bounds.
+ - 0: if the index supplied is out of bounds.
+ - 1: if the index supplied is in the bounds.
 
 Time Complexity: O(1)
 
@@ -69,7 +71,7 @@ Example:
     List_Get(l, 3, &buffer);
 
 */
-int List_Get(List* l, int index, void* buffer);
+bool List_Get(List* l, int index, void* buffer);
 
 /*
 Stores the last element in the list in the buffer, then removes the last element from the list.
@@ -79,9 +81,8 @@ Inputs:
  - void* buffer: a memory address where the element will be stored if possible.
 
 Outputs:
- - 0: if the list is not empty and a value is popped off the list.
- - 1: if the list is empty.
- - 2: if the buffer could not be written to i.e. buffer = NULL.
+ - 0: if the value could not be returned.
+ - 1: if the value was returned.
 
 Time Complexity: O(1)
 
@@ -92,7 +93,7 @@ Example:
     List_Pop(l, &buffer);
 
 */
-int List_Pop(List* l, void* buffer);
+bool List_Pop(List* l, void* buffer);
 
 /*
 Stores the first element in the list in the buffer, then removes the first element from the list.
@@ -102,8 +103,8 @@ Inputs:
  - void* buffer: a memory address where the element will be stored if possible.
 
 Outputs:
- - 0: if the list is not empty and a value is shifted off the list.
- - 1: if the list is empty.
+ - 0: if the value could not be returned.
+ - 1: if the value was returned.
 
 Time Complexity: O(n)
 
@@ -114,7 +115,7 @@ Example:
     List_Shift(l, &buffer);
 
 */
-int List_Shift(List* l, void* buffer);
+bool List_Shift(List* l, void* buffer);
 
 /*
 Given an index, removes the element stored at the index from the list.
@@ -124,8 +125,8 @@ Inputs:
  - int index: the index of the element to remove.
 
 Outputs:
- - 0: if the index supplied is in the bounds.
- - 1: if the index supplied is out of bounds.
+ - 0: if the index could not be removed.
+ - 1: if the index was successfully removed.
 
 Time Complexity: O(n)
 
@@ -135,7 +136,7 @@ Example:
     List_Remove(l, 3);
 
 */
-int List_Remove(List* l, int index);
+bool List_Remove(List* l, int index);
 
 /*
 Pushes an element to the end of the list.
@@ -183,8 +184,8 @@ Inputs:
  - void* element: the memory address where the element is stored
 
 Outputs:
- - 0: if the index supplied is in the bounds.
- - 1: if the index supplied is out of bounds.
+ - 0: if the index could not be added.
+ - 1: if the index was successfully added.
 
 Time Complexity: O(n)
 
@@ -195,7 +196,7 @@ Example:
     List_Remove(l, 3, &element);
 
 */
-int List_Add(List* l, int index, void* element);
+bool List_Add(List* l, int index, void* element);
 
 /*
 Clears all elements from a given List structure.
