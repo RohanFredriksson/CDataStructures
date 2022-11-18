@@ -51,6 +51,25 @@ Example:
 int List_Length(List* l);
 
 /*
+Returns the address of the array of pointers where each element is stored.
+
+Inputs:
+ - List* l: the memory address of the List structure.
+
+Outputs:
+ - void**: the address of the array of pointers where each element is stored.
+
+Time Complexity: O(1)
+
+Example:
+ - This gets all elements from the list.
+ 
+    (int**) elements = List_Elements(l);
+
+*/
+void** List_Elements(List* l);
+
+/*
 Given an index, gets the element at the index in the List.
 
 Inputs:

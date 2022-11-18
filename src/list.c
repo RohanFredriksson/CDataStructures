@@ -15,6 +15,10 @@ int List_Length(List* l) {
     return l->length;
 }
 
+void** List_Elements(List* l) {
+    return l->elements;
+}
+
 bool List_Get(List* l, int index, void* buffer) {
     if (index < 0 || index >= l->length || buffer == NULL) return 0;
     memcpy(buffer, l->elements[index], l->element_size);
