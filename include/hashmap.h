@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifndef HASHMAP_H
@@ -73,8 +74,8 @@ Inputs:
  - void* buffer: a memory address where the value will be placed if found.
 
 Outputs:
- - 0: if the object was successfully retrieved from the map.
- - 1: if the object could not be found in the map.
+ - 0: if the object could not be found in the map.
+ - 1: if the object was successfully retrieved from the map.
 
 Time Complexity: O(1)
 
@@ -87,7 +88,7 @@ Example:
     HashMap_Get(h, &key, &buffer);
 
 */
-int HashMap_Get(HashMap* h, void* key, void* buffer);
+bool HashMap_Get(HashMap* h, void* key, void* buffer);
 
 /*
 Given a key, removes the associated key/value pair in the HashMap.
@@ -97,9 +98,8 @@ Inputs:
  - void* key: a memory address which contains data about the key.
 
 Outputs:
- - 0: if the key/value pair was successfully removed from the map.
- - 1: if the key could not be found in the map.
- - 2: if the buffer could not be written to i.e. buffer = NULL.
+ - 0: if the key could not be found in the map, or could not be returned.
+ - 1: if the key/value pair was successfully removed from the map.
 
 Time Complexity: O(1)
 
@@ -111,7 +111,7 @@ Example:
     HashMap_Remove(h, &key);
 
 */
-int HashMap_Remove(HashMap* h, void* key);
+bool HashMap_Remove(HashMap* h, void* key);
 
 /*
 Given a key/value pair, adds/updates the key/value pair in the HashMap.

@@ -49,10 +49,10 @@ int HashMap_Size(HashMap* h) {
     return h->size;
 }
 
-int HashMap_Get(HashMap* h, void* key, void* buffer) {
+bool HashMap_Get(HashMap* h, void* key, void* buffer) {
 
-    // If the buffer is null, we cannot write to it, return 1.
-    if (buffer == NULL) {return 2;}
+    // If the buffer is null, we cannot write to it, return 0.
+    if (buffer == NULL) {return 0;}
 
     KeyValue* pair;
     int computed_hash;
@@ -64,7 +64,7 @@ int HashMap_Get(HashMap* h, void* key, void* buffer) {
     // If key is in the left table
     if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
         memcpy(buffer, pair->value, h->value_size);
-        return 0;
+        return 1;
     }
 
     // Compute right hash
@@ -74,11 +74,11 @@ int HashMap_Get(HashMap* h, void* key, void* buffer) {
     // If key is in the right table
     if (pair->key != NULL && memcmp(key, pair->key, h->key_size) == 0) {
         memcpy(buffer, pair->value, h->value_size);
-        return 0;
+        return 1;
     }
 
     // Key was not found
-    return 1;
+    return 0;
 
 }
 
@@ -101,7 +101,7 @@ void HashMap_Grow(HashMap* h) {
 
 }
 
-int HashMap_Remove(HashMap* h, void* key) {
+bool HashMap_Remove(HashMap* h, void* key) {
 
     KeyValue* pair;
     int computed_hash;
@@ -123,7 +123,7 @@ int HashMap_Remove(HashMap* h, void* key) {
 
         // Reduce size, and return
         h->size--;
-        return 0;
+        return 1;
 
     }
 
@@ -144,12 +144,12 @@ int HashMap_Remove(HashMap* h, void* key) {
 
         // Reduce size, and return
         h->size--;
-        return 0;
+        return 1;
 
     }
 
     // Key was not found
-    return 1;
+    return 0;
 
 }
 
